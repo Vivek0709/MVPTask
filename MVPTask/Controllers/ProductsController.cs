@@ -17,6 +17,7 @@ namespace MVPTask.Controllers
         // GET: Products
         public ActionResult Index()
         {
+            //Adding a comment
             return View();
         }
 
