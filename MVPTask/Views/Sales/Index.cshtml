@@ -1,0 +1,469 @@
+﻿@*@model IEnumerable<MVPTask.Models.ProductSold>*@
+
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/Content/themes/base/all.css" rel="stylesheet" />
+<h2>Sales</h2>
+
+<p>
+    <button data-bind="click: AddSalesClick" class="btn btn-success">Add New Sales Record</button>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                Customer Name
+            </th>
+            <th>
+                Product Name
+            </th>
+            <th>
+                Store Name
+            </th>
+            <th>
+                Date Sold
+            </th>
+            <th>
+                Action(Edit)
+            </th>
+            <th>
+                Action(Delete)
+            </th>
+        </tr>
+    </thead>
+    <tbody data-bind="foreach: Sales">
+        <!-- Add icon library -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+        <tr>
+            <td data-bind="text: CustomerName"> </td>
+            <td data-bind="text: ProductName"></td>
+            <td data-bind="text: StoreName"></td>
+            <td data-bind="text: DateSoldFormate"></td>
+            <td>
+                <button style="font-size: 15px" type="button" class="btn btn-success" data-bind="click:$root.EditButtonClick"><i class="fa fa-edit"></i> Edit</button>
+            </td>
+            <td>
+                <button id="btnDelete" type="button" class="btn btn-danger" data-bind="click:$root.deleteButtonClick"><i class="fa fa-trash"></i> Delete</button>
+            </td>
+        </tr>
+    </tbody>
+
+</table>
+
+<!--Add Customer Modal -->
+<div id="addSalesModal" class="modal fade" role="dialog" data-bind="with: CurrentSales">
+    <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Customer</h4>
+            </div>
+            <div class="modal-body">
+                @*<p>Select Customer: <select data-bind="options: $parent.CustomerList, optionsText: 'Name' , value: $parent.SelectedCustomer"></select></p>*@
+
+                <p>Select Customer: <select option type="text" data-bind="options: $parent.CustomerList, optionsText: 'Name' , value: $parent.SelectedCustomer" autofocus class="form-control"></select></p>
+                <p>Product Name: <select option type="text" data-bind="options: $parent.ProductList, optionsText:'Name',value: $parent.SelectedProduct" class="form-control"></select></p>
+                <p>Store Name: <select option type="text" data-bind="options: $parent.StoreList, optionsText:'Name',value: $parent.SelectedStore" class="form-control"></select></p>
+
+                <p>Date:</p>
+                <input type="text" class="form-control" data-bind="datepicker: DateSold, datepickerOptions: { minDate: new Date() } ">
+                @*<p>Date: <input type="date" data-bind="value:Date, valueUpdate: 'afterkeydown'" class="form-control" /></p>*@
+            </div>
+            <div class="modal-footer">
+                <button type="button" data-bind="click: $root.AddSales, enable: IsValid" class="btn btn-success" data-dismiss="modal">Save</button>
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!--Edit Modal -->
+<div id="EditSalesModal" class="modal fade" role="dialog" data-bind="with: CurrentSales">
+    <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Sales</h4>
+            </div>
+            <div class="modal-body">
+                <p>Select Customer: <select option type="text" data-bind="options: $parent.CustomerList, optionsText: 'Name', value: $parent.SelectedCustomer " autofocus class="form-control"></select></p>
+                <p>Product Name: <select option type="text" data-bind="options: $parent.ProductList, optionsText:'Name',value: $parent.SelectedProduct " class="form-control"></select></p>
+                <p>Store Name: <select option type="text" data-bind="options: $parent.StoreList, optionsText:'Name',value: $parent.SelectedStore" class="form-control"></select></p>
+
+                <p>Date:</p>
+                <input type="text" class="form-control" data-bind="datepicker: DateSold, datepickerOptions: { minDate: new Date(), dateFormat: 'dd/mm/yy' } ">
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" data-bind="click: $root.AddEditSales, enable: IsValid" class="btn btn-success" data-dismiss="modal">Save</button>
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!--Delete-->
+<div id="deleteSalesModal" class="modal fade" tabindex="-1" role="dialog" data-bind="">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">Remove Sales</h4>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure want to delete?&hellip;</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bind="click:$root.deleteSales">Delete</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
+
+@section scripts
+{
+    <script src="~/Scripts/moment.js"></script>
+    <script src="~/Scripts/jquery-ui-1.12.1.min.js"></script>
+    <script type="text/javascript">
+        var emptySales = {
+            //Id:0,
+            CustomerName: '',
+            CustomerId: 0,
+            ProductName: '',
+            ProductId: 0,
+            StoreName: '',
+            StoreId: 0,
+            DateSold: ''
+        }
+
+        function SalesViewModel(data) {
+            var self = this;
+
+            self.Id = ko.observable(data.Id);
+            self.CustomerId = ko.observable(data.CustomerId);
+            self.CustomerName = ko.observable(data.CustomerName);
+
+
+            self.ProductId = ko.observable(data.ProductId);
+            self.ProductName = ko.observable(data.ProductName);
+
+            self.StoreId = ko.observable(data.StoreId);
+            self.StoreName = ko.observable(data.StoreName);
+
+            //self.DateSold = ko.observable(data.DateSold).extend({ required: true, date: true });
+            self.DateSold = ko.observable(data.DateSold).extend({ required: true });
+
+            self.DateSoldFormate = ko.pureComputed(function() {
+                return moment(self.DateSold()).format("DD/MM/YYYY");
+            });
+
+
+            self.ModelErrors = ko.validation.group(self);
+            self.IsValid = ko.computed(function () {
+                self.ModelErrors.showAllMessages();
+
+                console.log(self.ModelErrors());
+                return self.ModelErrors().length == 0;
+            });
+        }
+
+        function DropDownViewModel(data) {
+            var self = this;
+            this.Id = ko.observable(data.Id);
+            this.Name = ko.observable(data.Name);
+
+        }
+
+        function ViewModel() {
+            var self = this;
+            self.Sales = ko.observableArray();
+            self.CurrentSales = ko.observable();
+
+            self.CustomerList = ko.observableArray();
+            self.SelectedCustomer = ko.observable(new DropDownViewModel({Id: 0,Name: ''}));
+
+            self.ProductList = ko.observableArray();
+            self.SelectedProduct = ko.observable(new DropDownViewModel({Id: 0,Name: ''}));
+
+            self.StoreList = ko.observableArray();
+            self.SelectedStore = ko.observable(new DropDownViewModel({Id: 0,Name: ''}));
+
+            self.AddSalesClick = function () {
+
+                self.CurrentSales(new SalesViewModel(emptySales));
+
+                self.SelectedCustomer(self.CustomerList()[0]);
+                self.SelectedProduct(self.ProductList()[0]);
+                self.SelectedStore(self.StoreList()[0]);
+
+                $("#addSalesModal").modal('show');
+               // current.IsValid();
+            }
+
+            self.deleteButtonClick = function (selected) {
+
+                var sale = {
+                    Id: selected.Id(),
+                    CustomerId: selected.CustomerId(),
+                    CustomerName: selected.CustomerName(),
+                    StoreId: selected.StoreId(),
+                    StoreName: selected.StoreName(),
+                    ProductId: selected.ProductId(),
+                    ProductName: selected.ProductName(),
+                    DateSold: moment(selected.DateSold()).format('DD/MM/YYYY')
+                }
+                $.ajax({
+                    type: "GET",
+                    url: "/Sales/DeleteSales",
+                    cache: false,
+                    data: sale,//{ id: selected.Id() },
+                    success: function (data) {
+                        //self.CurrentSales(new SalesViewModel(data));
+                        self.CurrentSales(new SalesViewModel(sale));
+                        $("#deleteSalesModal").modal('show');
+                    }
+                });
+            }
+
+            self.deleteSales = function () {
+                var sales = ko.toJSON(self.CurrentSales);
+
+                $.ajax({
+                    type: "POST",
+                    url: "/Sales/DeleteSales",
+                    cache: false,
+                    data: sales,
+                    contentType: "application/json",
+                    success: function (data) {
+
+                        if (data == "OK") {
+                            window.location.reload()
+                        } else {
+                            alert("Something went wrong")
+                        }
+                    },
+                    error: function (err, xhr, arr) {
+                        alert("Something went wrong")
+                    }
+                });
+            }
+
+            self.GetSelectedCustomer = function(id) {
+                return ko.utils.arrayFirst(self.CustomerList(),
+                    function(child) {
+                        return child.Id() === id;
+                    });
+            }
+
+            self.GetSelectedProduct = function (id) {
+                return ko.utils.arrayFirst(self.ProductList(),
+                    function (child) {
+                        return child.Id() === id;
+                    });
+            }
+            self.GetSelectedStore = function (id) {
+                return ko.utils.arrayFirst(self.StoreList(),
+                    function (child) {
+                        return child.Id() === id;
+                    });
+            }
+
+            self.EditButtonClick = function (selected) {
+
+                var sale = {
+                    Id: selected.Id(),
+                    CustomerId: selected.CustomerId(),
+                    CustomerName: selected.CustomerName(),
+                    StoreId: selected.StoreId(),
+                    StoreName: selected.StoreName(),
+                    ProductId: selected.ProductId(),
+                    ProductName: selected.ProductName(),
+                    DateSold: moment(selected.DateSold()).format('DD/MM/YYYY')
+                }
+
+                self.CurrentSales(new SalesViewModel(sale));
+                self.SelectedCustomer(self.GetSelectedCustomer(selected.CustomerId()));
+                //self.SelectedCustomer.Name(selected.CustomerName());
+
+                self.SelectedProduct(self.GetSelectedProduct(selected.ProductId()));
+                //self.SelectedProduct().Id(selected.ProductId());
+               // self.SelectedProduct().Name(selected.ProductName());
+
+                self.SelectedStore(self.GetSelectedStore(selected.StoreId()));
+                //self.SelectedStore().Id(selected.StoreId());
+                //self.SelectedStore().Name(selected.StoreName());
+
+                $("#EditSalesModal").modal('show');
+            }
+
+            self.AddEditSales = function () {
+                self.CurrentSales().CustomerId(self.SelectedCustomer().Id());
+                self.CurrentSales().ProductId(self.SelectedProduct().Id());
+                self.CurrentSales().StoreId(self.SelectedStore().Id);
+                //alert(self.CurrentSales().CustomerId(self.SelectedCustomer().Id()));
+                var sales = ko.toJSON(self.CurrentSales);
+
+                $.ajax({
+                    type: "POST",
+                    url: "/Sales/AddEditSales",
+                    cache: false,
+                    data: sales,
+                    contentType: "application/json",
+                    success: function (data) {
+
+                        if (data == "OK") {
+                            window.location.reload()
+                        } else {
+                            alert("Something went wrong")
+                        }
+                    },
+                    error: function (err, xhr, arr) {
+                        alert("Something went wrong")
+                    }
+                });
+            }
+
+            self.GetAllCustomers = function () {
+                $.ajax({
+                    type: "GET",
+                    url: "/Customers/GetCustomers",
+                    cache: false,
+                    success: function (data) {
+
+                        $.each(data,
+                            function (index, value) {
+                                self.CustomerList.push(new DropDownViewModel(value));
+                            });
+                    }
+                });
+            }
+
+            self.GetAllProduct = function () {
+                $.ajax({
+                    type: "GET",
+                    url: "/Products/GetProducts",
+                    cache: false,
+                    success: function (data) {
+
+                        $.each(data,
+                            function (index, value) {
+                                self.ProductList.push(new DropDownViewModel(value));
+                            });
+                    }
+                });
+            }
+
+            self.GetAllStore = function () {
+                $.ajax({
+                    type: "GET",
+                    url: "/Stores/GetAllStore",
+                    cache: false,
+                    success: function (data) {
+
+                        $.each(data,
+                            function (index, value) {
+                                self.StoreList.push(new DropDownViewModel(value));
+                            });
+                    }
+                });
+            }
+
+            self.AddSales = function () {
+
+                self.CurrentSales().CustomerId(self.SelectedCustomer().Id());
+                self.CurrentSales().ProductId(self.SelectedProduct().Id());
+                self.CurrentSales().StoreId(self.SelectedStore().Id);
+                var sales = ko.toJSON(self.CurrentSales);
+
+                $.ajax({
+                    type: "POST",
+                    url: "/Sales/AddSales",
+                    cache: false,
+                    data: sales,
+                    contentType: "application/json",
+                    success: function (data) {
+                        if (data == "OK") {
+                            window.location.reload();
+                        } else {
+                            alert("Something went worng");
+                        }
+                    },
+                    error: function (err, xhr, arr) {
+                        alert("Something went wrong");
+                    }
+                });
+            }
+
+            self.GetAllSales = function () {
+                $.ajax({
+                    type: "GET",
+                    url: "/Sales/GetSales",
+                    cache: false,
+                    success: function (data) {
+
+                        $.each(data,
+                            function (index, value) {
+                                self.Sales.push(new SalesViewModel(value));
+                            });
+                    }
+                });
+            }
+
+            self.GetAllSales();
+            self.GetAllCustomers();
+            self.GetAllProduct();
+            self.GetAllStore();
+        }
+
+        $(function () {
+            ko.validation.init();
+
+            ko.bindingHandlers.datepicker = {
+                init: function (element, valueAccessor, allBindingsAccessor) {
+                    var options = allBindingsAccessor().datepickerOptions || {},
+                        $el = $(element);
+
+                    //initialize datepicker with some optional options
+                    $el.datepicker(options);
+
+                    //handle the field changing
+                    ko.utils.registerEventHandler(element,
+                        "change",
+                        function () {
+                            var observable = valueAccessor();
+                            observable($el.datepicker("getDate"));
+                        });
+
+                    //handle disposal (if KO removes by the template binding)
+                    ko.utils.domNodeDisposal.addDisposeCallback(element,
+                        function () {
+                            $el.datepicker("destroy");
+                        });
+
+                },
+                update: function (element, valueAccessor) {
+                    var value = ko.utils.unwrapObservable(valueAccessor()),
+                        $el = $(element),
+                        current = $el.datepicker("getDate");
+
+                    if (value - current !== 0) {
+                        $el.datepicker("setDate", value);
+                    }
+                }
+            };
+            ko.validation.makeBindingHandlerValidatable('datepicker');
+            ko.applyBindings(new ViewModel());
+        });
+    </script>
+}

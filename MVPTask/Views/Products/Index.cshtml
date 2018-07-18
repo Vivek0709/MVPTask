@@ -1,0 +1,280 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Product</h2>
+
+<p>
+    <button data-bind="click: AddButtonClick" class="btn btn-success">Add product</button>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                Name
+            </th>
+            <th>
+                Price
+            </th>
+            <th>
+                Action(Edit)
+            </th>
+            <th>
+                Action(Delete)
+            </th>
+        </tr>
+    </thead>
+    <tbody data-bind="foreach: Products">
+    <!-- Add icon library -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <tr>
+        <td data-bind="text: Name"> </td>
+        <td data-bind="text: Price"></td>
+        <td>
+            <button style="font-size: 15px" type="button" class="btn btn-success" data-bind="click:$root.EditButtonClick"><i class="fa fa-edit"></i> Edit</button>
+        </td>
+        <td>
+            <button id="btnDelete" type="button" class="btn btn-danger" data-bind="click:$root.deleteButtonClick"><i class="fa fa-trash"></i> Delete</button>
+        </td>
+    </tr>
+    </tbody>
+
+</table>
+
+<!-- Modal -->
+<div id="addProductModal" class="modal fade" role="dialog" data-bind="with: CurrentProduct">
+    <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Product</h4>
+            </div>
+            <div class="modal-body">
+                @*<p>Name:<input data-bind="value:Name" /></p>*@
+                <p>Name: <input type="text" data-bind="value:Name, valueUpdate: 'afterkeydown'" autofocus class="form-control" placeholder="Product Name" /></p>
+                <p>Price: <input type="text" data-bind="value:Price, valueUpdate: 'afterkeydown'" class="form-control" placeholder="Product Price" /></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" data-bind="click: $root.saveProduct, enable: IsValid" class="btn btn-success" data-dismiss="modal">Save</button>
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!--Edit Modal -->
+<div id="EditProductModal" class="modal fade" role="dialog" data-bind="with: CurrentProduct">
+    <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Product</h4>
+            </div>
+            <div class="modal-body">
+                @*<p>Name:<input data-bind="value:Name" /></p>*@
+                <p>Name: <input type="text" data-bind="value:Name, valueUpdate: 'afterkeydown'" autofocus class="form-control" placeholder="Product Name" /></p>
+                <p>Price: <input type="text" data-bind="value:Price, valueUpdate: 'afterkeydown'" class="form-control" placeholder="Product Price" /></p>
+            </div>
+           
+            <div class="modal-footer">
+                <button type="button" data-bind="click: $root.editProduct, enable: IsValid" class="btn btn-success" data-dismiss="modal">Save</button>
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!--Delete-->
+<div id="deleteProductModal" class="modal fade" tabindex="-1" role="dialog" data-bind="">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">Remove Product</h4>
+            </div>
+            <div class="modal-body" data-bind="if:$root.CanDelete">
+                <p>Are you sure want to delete?&hellip;</p>
+            </div>
+            <div class="modal-body" data-bind="ifnot: $root.CanDelete">
+                <p>Sorry, you cannot delete this customer&hellip;</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bind="click:$root.deleteProduct,visible:CanDelete">Delete</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+@section scripts {
+    <script type="text/javascript">
+
+        var emptyProduct = {
+            //Id: 0,
+            Name: '',
+            Price: 0
+        }
+
+        function ProductViewModel(data) {
+            var self = this;
+
+            self.Id = ko.observable(data.Id);
+            self.Name = ko.observable(data.Name).extend({ required: true, maxLength: 50 });
+            self.Price = ko.observable(data.Price).extend({ required: true, max: 10, number: true, min: 5 });
+
+            self.ModelErrors = ko.validation.group(self);
+            self.IsValid = ko.computed(function() {
+                self.ModelErrors.showAllMessages();
+                return self.ModelErrors().length == 0;
+            });
+        }
+
+        function ViewModel() {
+            var self = this;
+            self.Products = ko.observableArray();
+            self.CurrentProduct = ko.observable();
+
+            self.CanDelete = ko.observable(false);
+
+            self.AddButtonClick = function () {
+
+                self.CurrentProduct(new ProductViewModel(emptyProduct));
+
+                $("#addProductModal").modal('show');
+
+            }
+            self.deleteButtonClick = function (select) {
+                $.ajax({
+                    type: "GET",
+                    url: "/Products/CanDeleteProduct",
+                    cache: false,
+                    data: { id: select.Id() },
+                    success: function (candelete) {
+                        self.CurrentProduct(select);
+                        self.CanDelete(candelete);
+                        //self.CurrentStore(new ProductViewModel(data));
+                        $("#deleteProductModal").modal('show');
+                    }
+                });
+                
+
+            }
+
+            self.deleteProduct = function () {
+                var product = ko.toJSON(self.CurrentProduct);
+
+                $.ajax({
+                    type: "POST",
+                    url: "/Products/DeleteProduct",
+                    cache: false,
+                    data: product,
+                    contentType: "application/json",
+                    success: function (data) {
+
+                        if (data == "OK") {
+                            window.location.reload()
+                        } else {
+                            alert("Something went wrong")
+                        }
+                    },
+                    error: function (err, xhr, arr) {
+                        alert("Something went wrong")
+                    }
+                });
+            }
+
+            self.EditButtonClick = function (selected) {
+
+                $.ajax({
+                    type: "GET",
+                    url: "/Products/EditProduct",
+                    cache: false,   
+                    data: { id: selected.Id() },
+                    success: function (data) {
+                        self.CurrentProduct(new ProductViewModel(data));
+
+                        $("#EditProductModal").modal('show');
+                    }
+                });
+
+            }
+
+            self.editProduct = function () {
+                var product = ko.toJSON(self.CurrentProduct);
+
+                $.ajax({
+                    type: "POST",
+                    url: "/Products/EditProduct",
+                    cache: false,
+                    data: product,
+                    contentType: "application/json",
+                    success: function (data) {
+
+                        if (data == "OK") {
+                            window.location.reload()
+                        } else {
+                            alert("Something went wrong")
+                        }
+                    },
+                    error: function (err, xhr, arr) {
+                        alert("Something went wrong")
+                    }
+                });
+            }
+
+            self.saveProduct = function () {
+                var product = ko.toJSON(self.CurrentProduct);
+
+                $.ajax({
+                    type: "POST",
+                    url: "Products/AddProduct",
+                    cache: false,
+                    data: product,
+                    contentType: "application/json",
+                    success: function (data) {
+
+                        if (data == "OK") {
+                            window.location.reload()
+                        } else {
+                            alert("Something went wrong")
+                        }
+                    },
+                    error: function (err, xhr, arr) {
+                        alert("Something went wrong")
+                    }
+                });
+            }
+
+            self.GetAllProducts = function () {
+                $.ajax({
+                    type: "GET",
+                    url: "/Products/GetProducts",
+                    cache: false,
+                    success: function (data) {
+
+                        $.each(data, function (index, value) {
+                            self.Products.push(new ProductViewModel(value))
+                        });
+                    }
+                });
+            }
+
+
+            self.GetAllProducts();
+        }
+
+        $(function () {
+            ko.validation.init();
+            ko.applyBindings(new ViewModel());
+        })
+    </script>
+
+}

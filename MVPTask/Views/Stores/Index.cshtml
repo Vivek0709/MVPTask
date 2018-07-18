@@ -1,0 +1,278 @@
+﻿@*@model IEnumerable<MVPTask.Models.Store>*@
+
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Store</h2>
+
+<p>
+    <button data-bind="click: AddStoreButtonClick" class="btn btn-success">Add Store</button>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                Name
+            </th>
+            <th>
+                Address
+            </th>
+            <th>
+                Action(Edit)
+            </th>
+            <th>
+                Action(Delete)
+            </th>
+        </tr>
+    </thead>
+    <tbody data-bind="foreach: Stores">
+    <!-- Add icon library -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <tr>
+        <td data-bind="text: Name"> </td>
+        <td data-bind="text: Address"></td>
+        <td>
+            <button style="font-size: 15px" type="button" class="btn btn-success" data-bind="click:$root.EditButtonClick"><i class="fa fa-edit"></i> Edit</button>
+        </td>
+        <td>
+            <button id="btnDelete" type="button" class="btn btn-danger" data-bind="click:$root.deleteButtonClick"><i class="fa fa-trash"></i> Delete</button>
+        </td>
+    </tr>
+    </tbody>
+
+</table>
+
+<!--Add Store Modal -->
+<div id="addStoreModal" class="modal fade" role="dialog" data-bind="with: CurrentStore">
+    <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Store</h4>
+            </div>
+            <div class="modal-body">
+                @*<p>Name:<input data-bind="value:Name" /></p>*@
+                <p>Name: <input type="text" data-bind="value:Name, valueUpdate: 'afterkeydown'" autofocus class="form-control" placeholder="Store Name" /></p>
+                <p>Address: <input type="text" data-bind="value:Address, valueUpdate: 'afterkeydown'" class="form-control" placeholder="Store Address" /></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" data-bind="click: $root.SaveStoreButtonClick, enable: IsValid" class="btn btn-success" data-dismiss="modal">Save</button>
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!--Edit Modal -->
+<div id="EditStoreModal" class="modal fade" role="dialog" data-bind="with: CurrentStore">
+    <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Product</h4>
+            </div>
+            <div class="modal-body">
+                @*<p>Name:<input data-bind="value:Name" /></p>*@
+                <p>Name: <input type="text" data-bind="value:Name, valueUpdate: 'afterkeydown'" autofocus class="form-control" placeholder="Store Name" /></p>
+                <p>Address: <input type="text" data-bind="value:Address, valueUpdate: 'afterkeydown'" class="form-control" placeholder="Store Address" /></p>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" data-bind="click: $root.AddEditStore, enable: IsValid" class="btn btn-success" data-dismiss="modal">Save</button>
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!--Delete-->
+<div id="deleteStoreModal" class="modal fade" tabindex="-1" role="dialog" data-bind="">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">Remove Store</h4>
+            </div>
+            <div class="modal-body" data-bind="if:$root.CanDelete">
+                <p>Are you sure want to delete?&hellip;</p>
+            </div>
+            <div class="modal-body" data-bind="ifnot: $root.CanDelete">
+                <p>Sorry, you cannot delete this customer&hellip;</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bind="click:$root.deleteStore,visible:CanDelete">Delete</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
+@section scripts
+{
+    <script type="text/javascript">
+
+        var EmptyStore = {
+            Name: '',
+            Address: ''
+        }
+
+        function StoreViewModel(data) {
+            var self = this;
+            self.Id = ko.observable(data.Id);
+            self.Name = ko.observable(data.Name).extend({ required: true, maxLength: 50 });
+            self.Address = ko.observable(data.Address);
+
+            self.ModelErrors = ko.validation.group(self);
+            self.IsValid = ko.computed(function () {
+                self.ModelErrors.showAllMessages();
+                return self.ModelErrors().length == 0;
+            });
+        };
+
+        function ViewModel() {
+            var self = this;
+
+            self.Stores = ko.observableArray();
+            self.CurrentStore = ko.observable();
+            self.CanDelete = ko.observable(false);
+            //Add store
+            self.AddStoreButtonClick = function () {
+                self.CurrentStore(new StoreViewModel(EmptyStore));
+                $("#addStoreModal").modal('show');
+            }
+
+            self.deleteButtonClick = function (select) {
+                $.ajax({
+                    type: "GET",
+                    url: "Stores/GetDeleteStore",
+                    cache: false,
+                    data: { id: select.Id() },
+                    success: function (canDelete) {
+                        self.CurrentStore(select);
+                        //self.CurrentStore(new StoreViewModel(data));
+                        self.CanDelete(canDelete);
+
+                        $("#deleteStoreModal").modal('show');
+                    }
+                });
+
+
+            }
+
+            self.deleteStore = function () {
+                var store = ko.toJSON(self.CurrentStore);
+
+                $.ajax({
+                    type: "POST",
+                    url: "Stores/PostDeleteStore",
+                    cache: false,
+                    data: store,
+                    contentType: "application/json",
+                    success: function (data) {
+
+                        if (data == "OK") {
+                            window.location.reload()
+                        } else {
+                            alert("Something went wrong")
+                        }
+                    },
+                    error: function (err, xhr, arr) {
+                        alert("Something went wrong")
+                    }
+                });
+            }
+
+            self.EditButtonClick = function (selected) {
+
+                $.ajax({
+                    type: "GET",
+                    url: "Stores/EditStore",
+                    cache: false,
+                    data: { id: selected.Id() },
+                    success: function (data) {
+                        self.CurrentStore(new StoreViewModel(data));
+
+                        $("#EditStoreModal").modal('show');
+                    }
+                });
+
+            }
+
+            self.AddEditStore = function () {
+                var store = ko.toJSON(self.CurrentStore);
+
+                $.ajax({
+                    type: "POST",
+                    url: "Stores/AddEditStore",
+                    cache: false,
+                    data: store,
+                    contentType: "application/json",
+                    success: function (data) {
+
+                        if (data == "OK") {
+                            window.location.reload()
+                        } else {
+                            alert("Something went wrong")
+                        }
+                    },
+                    error: function (err, xhr, arr) {
+                        alert("Something went wrong")
+                    }
+                });
+            }
+
+            //Save Store
+            self.SaveStoreButtonClick = function () {
+                var store = ko.toJSON(self.CurrentStore);
+
+                $.ajax({
+                    type: "POST",
+                    url: "Stores/AddStores",
+                    cache: false,
+                    data: store,
+                    contentType: "application/json",
+                    success: function (data) {
+                        if (data == "OK") {
+                            window.location.reload()
+                        } else {
+                            alert("Somthing Went Wrong");
+                        }
+                    },
+                    Error: function (err, xhr, arr) {
+                        alert("Something went worng");
+                    }
+                });
+            }
+            //Get All Stores
+            self.GetAllStores = function () {
+                $.ajax({
+                    type: "GET",
+                    url: "Stores/GetAllStore",
+                    cache: false,
+                    success: function (data) {
+
+                        $.each(data,
+                            function (index, value) {
+                                self.Stores.push(new StoreViewModel(value))
+                            });
+                    }
+                });
+            }
+            self.GetAllStores();
+        }
+
+        $(function () {
+            ko.validation.init();
+            ko.applyBindings(new ViewModel());
+        });
+    </script>
+}

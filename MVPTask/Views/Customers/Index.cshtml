@@ -1,0 +1,274 @@
+﻿@*@model IEnumerable<MVPTask.Models.Customer>*@
+
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Customer</h2>
+
+<p>
+    <button data-bind="click: AddCustomerClick" class="btn btn-success">Add Customer</button>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                Name
+            </th>
+            <th>
+                Address
+            </th>
+            <th>
+                Action(Edit)
+            </th>
+            <th>
+                Action(Delete)
+            </th>
+        </tr>
+    </thead>
+    <tbody data-bind="foreach: Customers">
+        <!-- Add icon library -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+        <tr>
+            <td data-bind="text: Name"> </td>
+            <td data-bind="text: Address"></td>
+            <td>
+                <button style="font-size: 15px" type="button" class="btn btn-success" data-bind="click:$root.EditCustomerClick"><i class="fa fa-edit"></i> Edit</button>
+            </td>
+            <td>
+                <button id="btnDelete" type="button" class="btn btn-danger" data-bind="click:$root.DeleteCustomerClick"><i class="fa fa-trash"></i> Delete</button>
+            </td>
+        </tr>
+    </tbody>
+
+</table>
+
+<!--Add Customer Modal -->
+<div id="addCustomerModal" class="modal fade" role="dialog" data-bind="with: CurrentCustomer">
+    <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Customer</h4>
+            </div>
+            <div class="modal-body">
+                <p>Name: <input type="text" data-bind="value:Name, valueUpdate: 'afterkeydown'" autofocus class="form-control" placeholder="Customer Name" /></p>
+                <p>Address: <input type="text" data-bind="value:Address, valueUpdate: 'afterkeydown'" class="form-control" placeholder="Customer Address" /></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" data-bind="click: $root.AddCustomer, enable: IsValid" class="btn btn-success" data-dismiss="modal">Save</button>
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!--Edit Customer Modal -->
+<div id="editCustomerModal" class="modal fade" role="dialog" data-bind="with: CurrentCustomer">
+    <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Customer</h4>
+            </div>
+            <div class="modal-body">
+                <p>Name: <input type="text" data-bind="value:Name, valueUpdate: 'afterkeydown'" autofocus class="form-control" placeholder="Customer Name" /></p>
+                <p>Address: <input type="text" data-bind="value:Address, valueUpdate: 'afterkeydown'" class="form-control" placeholder="Customer Address" /></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" data-bind="click: $root.AddeditCustomer, enable: IsValid" class="btn btn-success" data-dismiss="modal">Save</button>
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!--Delete Customer-->
+<div id="deleteCustomerModal" class="modal fade" tabindex="-1" role="dialog" data-bind="with: CurrentCustomer">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">Remove Customer</h4>
+            </div>
+            <div class="modal-body" data-bind="if: $root.CanDelete">
+                <p>Are you sure want to delete?&hellip;</p>
+            </div>
+            <div class="modal-body" data-bind="ifnot: $root.CanDelete">
+                <p>Sorry, you cannot delete this customer&hellip;</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bind="click:$root.DeleteCustomer, visible: $root.CanDelete">Delete</button>
+                @*<button type="button" class="btn btn-danger" data-bind="click:$root.DeleteCustomer">Delete</button>*@
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
+@section scripts{
+    <script type="text/javascript">
+
+        var emptyCustomer = {
+            Id: 0,
+            Name: '',
+            Address: ''
+        }
+
+        function CustomerViewModel(data) {
+            var self = this;
+
+            self.Id = ko.observable(data.Id);
+            self.Name = ko.observable(data.Name).extend({ required: true, maxLenght: 50 });
+            self.Address = ko.observable(data.Address);
+
+            self.ModelErrors = ko.validation.group(self);
+            self.IsValid = ko.computed(function () {
+                self.ModelErrors.showAllMessages();
+                return self.ModelErrors().length == 0
+            })
+        }
+
+
+        function ViewModel() {
+            var self = this;
+            self.Customers = ko.observableArray();
+            self.CurrentCustomer = ko.observable();
+
+            self.CanDelete = ko.observable(false);
+
+            self.AddCustomerClick = function () {
+                self.CurrentCustomer(new CustomerViewModel(emptyCustomer));
+                $("#addCustomerModal").modal("show");
+            }
+
+            self.DeleteCustomerClick = function (selected) {
+                $.ajax({
+                    Type: "GET",
+                    url: "Customers/CanDeleteCustomer",
+                    cache: false,
+                    data: { id: selected.Id() },
+                    success: function (canDelete) {
+                        self.CurrentCustomer(selected);
+                        self.CanDelete(canDelete);
+                        //
+                        $("#deleteCustomerModal").modal('show');
+                    }
+                });
+            }
+
+            self.DeleteCustomer = function () {
+                var customer = ko.toJSON(self.CurrentCustomer);
+
+                $.ajax({
+                    type: "POST",
+                    url: "Customers/PostDeleteCustomer",
+                    cache: false,
+                    data: customer,
+                    contentType: "application/json",
+                    success: function(data) {
+                        if (data == "OK")
+                            window.location.reload();
+                        else
+                            alert("Somthig went Worng");
+                    },
+                    error: function (err, xhr, arr) {
+                        alert("Something went wrong")
+                    }
+                });
+            }
+
+            self.EditCustomerClick = function (selected) {
+                $.ajax({
+                    type: "GET",
+                    url: "Customers/EditCustomer",
+                    cache: false,
+                    data: { id: selected.Id() },
+                    success: function (data) {
+                        self.CurrentCustomer(new CustomerViewModel(data));
+
+                        $("#editCustomerModal").modal('show');
+                    }
+                });
+            }
+
+            self.AddeditCustomer = function () {
+                var customer = ko.toJSON(self.CurrentCustomer);
+
+                $.ajax({
+                    type: "POST",
+                    url: "Customers/AddEditCustomer",
+                    cache: false,
+                    data: customer,
+                    contentType: "application/json",
+                    success: function (data) {
+
+                        if (data == "OK") {
+                            window.location.reload()
+                        } else {
+                            alert("Something went wrong")
+                        }
+                    },
+                    error: function (err, xhr, arr) {
+                        alert("Something went wrong")
+                    }
+                });
+            }
+
+            self.AddCustomer = function () {
+                var customer = ko.toJSON(self.CurrentCustomer);
+
+                $.ajax({
+                    type: "POST",
+                    url: "Customers/AddCustomer",
+                    cache: false,
+                    data: customer,
+                    contentType: "application/json",
+                    success: function (data) {
+                        if (data == "OK") {
+                            window.location.reload()
+                        } else {
+                            alert("Something went worng")
+                        }
+                    },
+                    Error: function (err, xhr, arr) {
+                        alert("Something went worng")
+                    }
+                });
+            }
+
+            self.GetAllCustomers = function () {
+                $.ajax({
+                    type: "GET",
+                    url: "Customers/GetCustomers",
+                    cache: false,
+                    success: function (data) {
+
+                        $.each(data,
+                            function (index, value) {
+                                self.Customers.push(new CustomerViewModel(value))
+                            });
+                    }
+                });
+            }
+
+            self.GetAllCustomers();
+        }
+
+        $(function () {
+            ko.validation.init();
+            ko.applyBindings(new ViewModel());
+        })
+    </script>
+
+
+
+}
